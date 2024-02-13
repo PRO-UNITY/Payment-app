@@ -111,32 +111,32 @@ token = "tok_1OiwwGLZ26NOlTGBe3BQdVAX"
 
 
 
-def process_payment(customer_id, card_id, amount, currency='usd'):
-    try:
-        # Create a charge using the customer ID and card ID
-        stripe.api_key = "sk_test_51OirCFLZ26NOlTGBlprWJXdfakpoZ8Y6cnS8t2eq7sumT26UT5SDt5qW99j5oZEIxhkTBcomG8HfAbR5h2Ye7hND00xsAUxZxV"
+# def process_payment(customer_id, card_id, amount, currency='usd'):
+#     try:
+#         # Create a charge using the customer ID and card ID
+#         stripe.api_key = "sk_test_51OirCFLZ26NOlTGBlprWJXdfakpoZ8Y6cnS8t2eq7sumT26UT5SDt5qW99j5oZEIxhkTBcomG8HfAbR5h2Ye7hND00xsAUxZxV"
 
-        charge = stripe.Charge.create(
-            amount=amount,  # Amount in cents
-            currency=currency,
-            customer=customer_id,
-            source=card_id,  # ID of the saved card
-            description='Payment for your order'
-        )
-        return charge
-    except stripe.error.StripeError as e:
-        # Handle Stripe errors
-        print("Stripe error:", str(e))
-        return None
+#         charge = stripe.Charge.create(
+#             amount=amount,  # Amount in cents
+#             currency=currency,
+#             customer=customer_id,
+#             source=card_id,  # ID of the saved card
+#             description='Payment for your order'
+#         )
+#         return charge
+#     except stripe.error.StripeError as e:
+#         # Handle Stripe errors
+#         print("Stripe error:", str(e))
+#         return None
 
-# Example usage:
-customer_id = "cus_PY8hmuRWHRdNnP"  # Replace with the actual customer ID
-card_id = "card_1Oj2OgLZ26NOlTGBL9upszXm"  # Replace with the actual card ID
-amount = 2222  # Amount in cents ($10.00)
-currency = 'usd'
+# # Example usage:
+# customer_id = "cus_PY8hmuRWHRdNnP"  # Replace with the actual customer ID
+# card_id = "card_1Oj2OgLZ26NOlTGBL9upszXm"  # Replace with the actual card ID
+# amount = 2222  # Amount in cents ($10.00)
+# currency = 'usd'
 
-charge = process_payment(customer_id, card_id, amount, currency)
-if charge:
-    print("Payment successful! Charge ID:", charge.id)
-else:
-    print("Payment failed.")
+# charge = process_payment(customer_id, card_id, amount, currency)
+# if charge:
+#     print("Payment successful! Charge ID:", charge.id)
+# else:
+#     print("Payment failed.")
