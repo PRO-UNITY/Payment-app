@@ -1,55 +1,47 @@
-# views.py
 from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
-from payment.models import Payment, Cards
-from django.contrib.auth.models import User
 from django.conf import settings
 import stripe
+from payment.models import Cards
 from payment.serializers import CardsSerializer, PaymentSerializer, PaymentCardSerializers
-from payment.renderers import UserRenderers
+from payment.microservice import user_permission
 
-
-
-def get_token_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {"refresh": str(refresh), "access": str(refresh.access_token)}
 
 class PaymentView(APIView):
-    render_classes = [UserRenderers]
-    perrmisson_class = [IsAuthenticated]
-
+    @user_permission
     @swagger_auto_schema(request_body=PaymentSerializer)
-    def post(self, request):
-        serializers = PaymentSerializer(data=request.data, context={"user_id": request.user})
+    def post(self, request, user_id=None):
+        if user_id is None:
+            return Response({"error": "Invalid user data"}, status=status.HTTP_401_UNAUTHORIZED)
+        serializers = PaymentSerializer(data=request.data, context={"user_id": user_id})
         if serializers.is_valid(raise_exception=True):
-            serializers.save()
+            instance = serializers.save()
             return Response(serializers.data, status=status.HTTP_201_CREATED)
         return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CardViews(APIView):
-    render_classes = [UserRenderers]
-    perrmisson_class = [IsAuthenticated]
 
-    def get(self, request):
-        user = Cards.objects.filter(user=request.user.id)[0]
+class CardViews(APIView):
+    @user_permission
+    def get(self, request, user_id=None):
+        if user_id is None:
+            return Response({"error": "Invalid user data"}, status=status.HTTP_401_UNAUTHORIZED)
+        user = Cards.objects.filter(user=user_id)[0]
         stripe.api_key = settings.STRIPE_PUBLIC_KEY
-        cards = stripe.Customer.list_sources(
-            user.custumer,
-            object='card'
-        )
+        cards = stripe.Customer.list_sources(user.custumer, object='card')
         list_card = []
         for  item in cards:
             list_card.append({'id': item.id, 'brand': item.brand, 'last4': item.last4, 'exp_month': item.exp_month, 'exp_yaer': item.exp_year})
         return Response(list_card, status=status.HTTP_200_OK)
 
+    @user_permission
     @swagger_auto_schema(request_body=CardsSerializer)
-    def post(self, request):
-        serializers = CardsSerializer(data=request.data, context={"user_id": request.user})
+    def post(self, request, user_id=None):
+        if user_id is None:
+            return Response({"error": "Invalid user data"}, status=status.HTTP_401_UNAUTHORIZED)
+        serializers = CardsSerializer(data=request.data, context={"user_id": user_id})
         if serializers.is_valid(raise_exception=True):
             serializers.save()
             return Response(serializers.data, status=status.HTTP_201_CREATED)
@@ -57,14 +49,26 @@ class CardViews(APIView):
 
 
 class PaymentCardView(APIView):
-    render_classes = [UserRenderers]
-    perrmisson_class = [IsAuthenticated]
-
+    @user_permission
     @swagger_auto_schema(request_body=PaymentCardSerializers)
-    def post(self, request):
-        custumer = Cards.objects.filter(user=request.user.id)[0]
-        serializers = PaymentCardSerializers(data=request.data, context={"user_id": request.user, 'custumer':custumer})
+    def post(self, request, user_id=None):
+        if user_id is None:
+            return Response({"error": "Invalid user data"}, status=status.HTTP_401_UNAUTHORIZED)
+        custumer = Cards.objects.filter(user=user_id)[0]
+        serializers = PaymentCardSerializers(data=request.data, context={"user_id": user_id, 'custumer':custumer.custumer, 'card_id': custumer.card_id})
         if serializers.is_valid(raise_exception=True):
             serializers.save()
             return Response(serializers.data, status=status.HTTP_201_CREATED)
         return Response(serializers.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CardDelete(APIView):
+    @user_permission
+    def delete(self, request, pk, user_id=None):
+        if user_id is None:
+            return Response({"error": "Invalid user data"}, status=status.HTTP_401_UNAUTHORIZED)
+        custumer = Cards.objects.get(id=pk)
+        deleted_card = stripe.Customer.retrieve_source(custumer.custumer, custumer.card_id)
+        deleted_card.delete()
+        custumer.delete()
+        return Response({'message': 'delete success'}, status=status.HTTP_400_BAD_REQUEST)

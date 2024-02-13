@@ -3,12 +3,14 @@ from django.contrib.auth.models import User
 
 
 class Payment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.IntegerField(null=True, blank=True)
+    total_price = models.CharField(max_length=250, null=True, blank=True)
     card = models.CharField(max_length=250, null=True, blank=True)
 
 
 class Cards(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.IntegerField(null=True, blank=True)
+    card_id = models.CharField(max_length=250, null=True, blank=True)
     card_number = models.CharField(max_length=50, null=True, blank=True)
     cvv = models.IntegerField(null=True, blank=True)
     card_date = models.CharField(max_length=100, null=True, blank=True)
@@ -19,7 +21,7 @@ class Cards(models.Model):
 
 
 class PaymentCards(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.IntegerField(null=True, blank=True)
     amount = models.CharField(max_length=250, null=True, blank=True)
     currency = models.CharField(max_length=100, null=True, blank=True)
     customer = models.CharField(max_length=250, null=True, blank=True)

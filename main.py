@@ -4,8 +4,8 @@ stripe.api_key = "sk_test_51OirCFLZ26NOlTGBlprWJXdfakpoZ8Y6cnS8t2eq7sumT26UT5SDt
 
 # stripe.api_key = "pk_test_51OirCFLZ26NOlTGBPqA4VQbX9UNih1vM8cJfm0xNohLNjMEEc2w3vxJjJdsFc0fSlfczmxGKFizW0H1rB0Dea2Jp00Flw7XUUR"
 
-customer_id = "cus_PY5l9kRzh0CvVI"
-token = "tok_1OiwwGLZ26NOlTGBe3BQdVAX"
+# customer_id = "cus_PY5l9kRzh0CvVI"
+# token = "tok_1OiwwGLZ26NOlTGBe3BQdVAX"
 
 
 
@@ -140,3 +140,13 @@ token = "tok_1OiwwGLZ26NOlTGBe3BQdVAX"
 #     print("Payment successful! Charge ID:", charge.id)
 # else:
 #     print("Payment failed.")
+
+
+
+card_id = 'card_1OjFJvLZ26NOlTGB39moNjkh'
+customer_id = "cus_PYM2Dg8CCOuWdD"
+deleted_card = stripe.Customer.retrieve_source(
+        customer_id,
+        card_id
+    )
+deleted_card.delete()
