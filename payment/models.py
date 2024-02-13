@@ -6,6 +6,7 @@ class Payment(models.Model):
     user = models.IntegerField(null=True, blank=True)
     total_price = models.CharField(max_length=250, null=True, blank=True)
     card = models.CharField(max_length=250, null=True, blank=True)
+    create_at = models.DateTimeField(auto_now_add=True)
 
 
 class Cards(models.Model):
@@ -18,6 +19,7 @@ class Cards(models.Model):
     custumer = models.CharField(max_length=250, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     description = models.CharField(max_length=255, null=True, blank=True)
+    create_at = models.DateTimeField(auto_now_add=True)
 
 
 class PaymentCards(models.Model):
@@ -27,3 +29,4 @@ class PaymentCards(models.Model):
     customer = models.CharField(max_length=250, null=True, blank=True)
     source = models.CharField(max_length=250, null=True, blank=True)
     description = models.CharField(max_length=250, null=True, blank=True)
+    create_at = models.DateTimeField(auto_now_add=True)
