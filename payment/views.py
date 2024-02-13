@@ -68,7 +68,49 @@ class CardDelete(APIView):
         if user_id is None:
             return Response({"error": "Invalid user data"}, status=status.HTTP_401_UNAUTHORIZED)
         custumer = Cards.objects.get(id=pk)
+        stripe.api_key = settings.STRIPE_PUBLIC_KEY
         deleted_card = stripe.Customer.retrieve_source(custumer.custumer, custumer.card_id)
         deleted_card.delete()
         custumer.delete()
         return Response({'message': 'delete success'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class WebHooks(APIView):
+
+    def post(self, request):
+        
+        payload = request.body
+        sig_header = request.headers.get('Stripe-Signature')  # Use get() to avoid KeyError
+        
+        try:
+            stripe.api_key = settings.STRIPE_PUBLIC_KEY
+            event = stripe.Webhook.construct_event(
+                payload=payload, 
+                sig_header=sig_header, 
+                secret="we_1OjJAxLZ26NOlTGBTsM2AwDA"
+            )
+        except ValueError as e:
+            # Invalid payload
+            print("ValueError:", e)
+            return Response({"error": "Invalid payload"}, status=status.HTTP_400_BAD_REQUEST)
+        except stripe.error.SignatureVerificationError as e:
+            # Invalid signature
+            print("SignatureVerificationError:", e)
+            return Response({"error": "Invalid signature"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Catch any other unexpected errors
+            print("Unexpected error:", e)
+            return Response({"error": "Unexpected error"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Handle the event
+        if event['type'] == 'payment_intent.succeeded':
+            payment_intent = event['data']['object']  # contains a stripe.PaymentIntent
+            # Handle successful payment intent
+            return Response({"message": "Payment intent succeeded"}, status=status.HTTP_200_OK)
+        elif event['type'] == 'payment_method.attached':
+            payment_method = event['data']['object']
+            # Handle payment method attached
+            return Response({"message": "Payment method attached"}, status=status.HTTP_200_OK)
+        else:
+            # Handle other event types if needed
+            return Response(status=status.HTTP_200_OK)
