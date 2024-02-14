@@ -1,0 +1,4 @@
+<form enctype="multipart/form-data" action="{% url 'product_page' %}" method="POST" role="product_page">
+    {% csrf_token %}
+      <h2>Hi ! To pay, click on this button <button type="submit" class="btn btn-success"  data-bind-href="pricing">Payment</button></h2>
+    </form>

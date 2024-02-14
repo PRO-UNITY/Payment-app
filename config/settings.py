@@ -53,7 +53,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -202,3 +202,5 @@ SIMPLE_JWT = {
 
 STRIPE_SECRET_KEY = 'pk_test_51OirCFLZ26NOlTGBPqA4VQbX9UNih1vM8cJfm0xNohLNjMEEc2w3vxJjJdsFc0fSlfczmxGKFizW0H1rB0Dea2Jp00Flw7XUUR'
 STRIPE_PUBLIC_KEY = 'sk_test_51OirCFLZ26NOlTGBlprWJXdfakpoZ8Y6cnS8t2eq7sumT26UT5SDt5qW99j5oZEIxhkTBcomG8HfAbR5h2Ye7hND00xsAUxZxV'
+STRIPE_WEBHOOK_SECRET_TEST = "whsec_ci9XZOt6B82OHpkvVC40GNDK5N87CfKL"
+REDIRECT_DOMAIN="https://api.prounity.uz"

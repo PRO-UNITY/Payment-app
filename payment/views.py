@@ -4,10 +4,79 @@ from rest_framework.views import APIView
 from drf_yasg.utils import swagger_auto_schema
 from django.conf import settings
 import stripe
+import time
+from django.shortcuts import render, redirect
+from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from payment.models import Cards
 from payment.serializers import CardsSerializer, PaymentSerializer, PaymentCardSerializers
 from payment.microservice import user_permission
+from stripe.error import SignatureVerificationError
+from django.views.decorators.csrf import csrf_exempt
+
+
+
+
+@csrf_exempt
+def product_page(request):
+	stripe.api_key = settings.STRIPE_PUBLIC_KEY
+	if request.method == 'POST':
+		checkout_session = stripe.checkout.Session.create(
+			payment_method_types = ['card'],
+			line_items = [
+				{
+					'price': "price_1OjdD9LZ26NOlTGBKDD4aCuZ",
+					'quantity': 1,
+				},
+			],
+			mode = 'payment',
+			customer_creation = 'always',
+			success_url = settings.REDIRECT_DOMAIN + '/payment_successful?session_id={CHECKOUT_SESSION_ID}',
+			cancel_url = settings.REDIRECT_DOMAIN + '/payment_cancelled',
+		)
+		return redirect(checkout_session.url, code=303)
+	return render(request, 'product_page.html')
+
+
+## use Stripe dummy card: 4242 4242 4242 4242
+def payment_successful(request):
+	stripe.api_key = settings.STRIPE_PUBLIC_KEY
+	checkout_session_id = request.GET.get('session_id', None)
+	session = stripe.checkout.Session.retrieve(checkout_session_id)
+	customer = stripe.Customer.retrieve(session.customer)
+	return render(request, 'payment_successful.html', {'customer': customer})
+
+
+def payment_cancelled(request):
+	stripe.api_key = settings.STRIPE_PUBLIC_KEY
+	return render(request, 'payment_cancelled.html')
+
+
+@csrf_exempt
+def stripe_webhook(request):
+	stripe.api_key = settings.STRIPE_PUBLIC_KEY
+    
+	time.sleep(10)
+	payload = request.body
+	signature_header = request.META['HTTP_STRIPE_SIGNATURE']
+	event = None
+	try:
+		event = stripe.Webhook.construct_event(
+			payload, signature_header, settings.STRIPE_WEBHOOK_SECRET_TEST
+		)
+	except ValueError as e:
+		return HttpResponse(status=400)
+	except stripe.error.SignatureVerificationError as e:
+		return HttpResponse(status=400)
+	if event['type'] == 'checkout.session.completed':
+		session = event['data']['object']
+		session_id = session.get('id', None)
+		time.sleep(15)
+	return HttpResponse(status=200)
+
+
+
+
 
 
 class PaymentView(APIView):
@@ -111,60 +180,65 @@ class WebHooks(APIView):
 
 
 
-@api_view(['GET'])
-def stripe_config(request):
-    if request.method == 'GET':
-        stripe_config = {'publicKey': settings.STRIPE_PUBLIC_KEY}
-        return Response(stripe_config)
+# @api_view(['GET'])
+# def stripe_config(request):
+#     if request.method == 'GET':
+#         stripe_config = {'publicKey': settings.STRIPE_PUBLIC_KEY}
+#         return Response(stripe_config)
 
 
-@api_view(['GET'])
-def create_checkout_session(request):
-    if request.method == 'GET':
-        domain_url = 'http://127.0.0.1:8000/'
-        stripe.api_key = settings.STRIPE_SECRET_KEY
-        try:
-            checkout_session = stripe.checkout.Session.create(
-                success_url=domain_url + 'success?session_id=sk_test_51OirCFLZ26NOlTGBlprWJXdfakpoZ8Y6cnS8t2eq7sumT26UT5SDt5qW99j5oZEIxhkTBcomG8HfAbR5h2Ye7hND00xsAUxZxV',
-                cancel_url=domain_url + 'cancelled/',
-                payment_method_types=['card'],
-                mode='payment',
-                line_items=[
-                    {
-                        'name': 'T-shirt',
-                        'quantity': 1,
-                        'currency': 'usd',
-                        'amount': '2000',
-                    }
-                ]
-            )
-            return Response({'sessionId': checkout_session['id']})
-        except Exception as e:
-            return Response({'error': str(e)}, status=400)
+# @api_view(['GET'])
+# def create_checkout_session(request):
+#     if request.method == 'GET':
+#         domain_url = 'http://127.0.0.1:8000/'
+#         stripe.api_key = settings.STRIPE_SECRET_KEY
+#         try:
+#             checkout_session = stripe.checkout.Session.create(
+#                 success_url=domain_url + 'success?session_id={CHECKOUT_SESSION_ID}',
+#                 cancel_url=domain_url + 'cancelled/',
+#                 payment_method_types=['card'],
+#                 mode='payment',
+#                 line_items=[
+#                     {
+#                         'name': 'T-shirt',
+#                         'quantity': 1,
+#                         'currency': 'usd',
+#                         'amount': '2000',
+#                     }
+#                 ]
+#             )
+#             return Response({'sessionId': checkout_session['id']})
+#         except Exception as e:
+#             return Response({'error': str(e)}, status=400)
 
 
-@api_view(['POST'])
-def stripe_webhook(request):
-    stripe.api_key = settings.STRIPE_SECRET_KEY
-    endpoint_secret = "we_1OjJAxLZ26NOlTGBTsM2AwDA"
-    payload = request.body
-    sig_header = "whsec_0BnKaBzdYPMXaR24CUhkkaQ5XjfIFXyY"
-    event = None
+# @api_view(['POST'])
+# def stripe_webhook(request):
+#     endpoint_secret = "whsec_add8cadbbd6f0f09c55a770ad800ba1d7d078ac20da21688435c24da55ad7062"
+#     payload = request.body
+#     sig_header = request.headers['STRIPE_SIGNATURE']
+    
+#     if sig_header is None:
+#         # Return a 400 Bad Request response if signature header is missing
+#         return Response({'error': 'Stripe signature header missing'}, status=400)
 
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
-    except ValueError as e:
-        # Invalid payload
-        return Response(status=400)
-    except stripe.error.SignatureVerificationError as e:
-        # Invalid signature
-        return Response(status=400)
+#     try:
+#         event = stripe.Webhook.construct_event(
+#             payload, sig_header, endpoint_secret
+#         )
+#     except ValueError as e:
+#         # Invalid payload
+#         return Response({'error': 'Invalid payload'}, status=400)
+#     except SignatureVerificationError as e:
+#         # Invalid signature
+#         return Response({'error': 'Invalid signature'}, status=400)
 
-    # Handle the checkout.session.completed event
-    if event['type'] == 'checkout.session.completed':
-        print("Payment was successful.")
-        # TODO: run some custom code here
+#     # Handle the checkout.session.completed event
+#     if event['type'] == 'checkout.session.completed':
+#         print("Payment was successful.")
+#         # TODO: run some custom code here
 
-    return Response(status=200)
+#     return Response(status=200)
+
+
+    
